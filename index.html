@@ -314,6 +314,49 @@ body{
 #laneTip b{font-family:var(--font-kai);font-size:13.5px;font-weight:600;display:block;margin-bottom:2px}
 #laneTip .y{font-size:11px;color:var(--ink-2);display:block;margin-bottom:3px;letter-spacing:.5px}
 #laneTip p{font-size:11px;color:var(--ink-2);line-height:1.65;margin:0}
+#laneTip i{
+  display:block;margin-top:5px;font-style:normal;
+  font-size:10.5px;letter-spacing:1px;color:var(--cinnabar);
+}
+
+#toast{
+  position:fixed;bottom:64px;left:50%;z-index:47;pointer-events:none;
+  transform:translateX(-50%) translateY(8px);opacity:0;
+  transition:opacity .35s,transform .35s;
+  background:rgba(43,38,32,.9);color:#f3ecd9;
+  padding:9px 20px;border-radius:999px;
+  font-size:12.5px;letter-spacing:2px;font-family:var(--font-song);white-space:nowrap;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.lane-bar.loading{opacity:.5;animation:bar-load 1s ease-in-out infinite}
+@keyframes bar-load{50%{filter:brightness(1.4)}}
+.lane-bar.data::before{
+  content:'';position:absolute;left:1px;right:1px;top:-4px;height:0;
+  border-top:1px dashed rgba(43,38,32,.4);
+}
+.lane-bar.done{opacity:1}
+.lane-bar.done::after{
+  content:'';position:absolute;right:-8px;top:50%;transform:translateY(-50%);
+  width:5px;height:5px;border-radius:50%;background:var(--cinnabar);
+  box-shadow:0 0 0 2px rgba(166,59,40,.18);
+}
+.tick.det{width:7px;height:7px;border-radius:2px}
+
+.node.detail{animation:pop-in .55s ease both}
+@keyframes pop-in{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.node.detail{width:264px;margin-right:118px}
+.node.detail .card{width:236px;padding:10px 13px 9px;border-left:3px solid}
+.node.detail .chip{margin-bottom:5px;font-size:10px;letter-spacing:2px}
+.node.detail .year{font-size:21px}
+.node.detail .year em{font-size:14px}
+.node.detail .title{font-size:15.5px;margin:1px 0 4px;letter-spacing:1px}
+.node.detail .desc{
+  font-size:12px;line-height:1.65;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.node.detail .dot{width:12px;height:12px;border-width:2px}
+.node.detail .connector{height:38px}
 
 @media (max-height:1060px){
   :root{--axisY:44%}
@@ -383,7 +426,7 @@ body{
         </div>
       </section>
       <div id="laneWrap">
-        <div class="lane-axis" id="laneAxis"><span class="lane-note">历代政权泳道 · 悬停查看 · 点击跳转对应节点</span></div>
+        <div class="lane-axis" id="laneAxis"><span class="lane-note">历代政权泳道 · 悬停查看 · 点击展开该政权历史事件</span></div>
         <div class="lane-canvas" id="laneCanvas"></div>
         <div id="laneGuide"></div>
         <div id="laneTip"></div>
@@ -404,7 +447,8 @@ body{
   </div>
 </header>
 
-<div class="hint" id="hint">滚轮 · 拖拽 · ← → 浏览长卷 · 下方泳道:悬停看政权,点击跳节点</div>
+<div class="hint" id="hint">滚轮 · 拖拽 · ← → 浏览长卷 · 点击泳道政权,异步展开该朝历史事件</div>
+<div id="toast"></div>
 <div class="grain"></div>
 
 <script>
@@ -436,12 +480,21 @@ let current=0,target=0,maxScroll=0,anchors=[0],
 
 const clamp=v=>Math.max(0,Math.min(maxScroll,v));
 
+let domNodes=[];
+function refreshNodes(){
+  domNodes=[...track.querySelectorAll('.node')].sort((a,b)=>(+a.dataset.y)-(+b.dataset.y));
+}
+
 function buildNodes(){
   const frag=document.createDocumentFragment();
   NODES.forEach((n,i)=>{
     const el=document.createElement('article');
     el.className='node '+(i%2?'down':'up');
     el.dataset.idx=i;
+    el.dataset.y=n.y;
+    el.dataset.era=n.era;
+    el.dataset.title=n.title;
+    el.dataset.ytxt=(n.p?n.p+' ':'')+n.n;
     el.innerHTML=
       '<div class="card"><span class="chip">'+n.era+'</span>'+
       '<h3 class="year"><em>'+n.p+'</em>'+n.n+'</h3>'+
@@ -451,18 +504,19 @@ function buildNodes(){
     frag.appendChild(el);
   });
   track.insertBefore(frag,$('#outro'));
+  refreshNodes();
 }
 
 function buildTicks(){
   tickBar.querySelectorAll('.tick').forEach(t=>t.remove());
   if(maxScroll<=0)return;
-  NODES.forEach((n,i)=>{
+  domNodes.forEach((el,i)=>{
     const b=document.createElement('button');
-    b.className='tick';
+    b.className='tick'+(el.classList.contains('detail')?' det':'');
     b.dataset.idx=i;
     b.style.left=(anchors[i+1]/maxScroll*100)+'%';
-    b.setAttribute('aria-label',n.era+' · '+n.title);
-    b.title=n.era+' · '+n.title;
+    b.setAttribute('aria-label',el.dataset.era+' · '+el.dataset.title);
+    b.title=el.dataset.era+' · '+el.dataset.title;
     tickBar.appendChild(b);
   });
 }
@@ -472,7 +526,8 @@ function measure(){
   const W=viewport.clientWidth;
   maxScroll=Math.max(0,track.scrollWidth-W);
   anchors=[0];
-  track.querySelectorAll('.node').forEach(el=>{
+  refreshNodes();
+  domNodes.forEach(el=>{
     anchors.push(clamp(el.offsetLeft+el.offsetWidth/2-W/2));
   });
   anchors.push(maxScroll);
@@ -498,13 +553,12 @@ function apply(){
     activeAnchor=ni;
     track.querySelectorAll('.node.active').forEach(e=>e.classList.remove('active'));
     tickBar.querySelectorAll('.tick.active').forEach(e=>e.classList.remove('active'));
-    if(ni>0&&ni<=NODES.length){
-      const el=track.querySelector('.node[data-idx="'+(ni-1)+'"]');
-      const tk=tickBar.querySelector('.tick[data-idx="'+(ni-1)+'"]');
-      if(el)el.classList.add('active');
+    const el=domNodes[ni-1];
+    const tk=tickBar.querySelector('.tick[data-idx="'+(ni-1)+'"]');
+    if(el){
+      el.classList.add('active');
       if(tk)tk.classList.add('active');
-      const n=NODES[ni-1];
-      eraLabel.textContent=n.era+' · '+(n.p?n.p+' ':'')+n.n+' 年';
+      eraLabel.textContent=el.dataset.era+' · '+el.dataset.ytxt+' 年';
       syncGanttHighlight(ni-1);
     }else{
       eraLabel.textContent=ni===0?'卷首 · 华夏长卷':'卷终 · 以史为鉴';
@@ -548,10 +602,9 @@ viewport.addEventListener('pointerdown',e=>{
   if(e.pointerType==='mouse'&&e.button!==0)return;
   dragging=true;moved=0;vel=0;
   px=lastX=e.clientX;lastT=performance.now();
-  viewport.setPointerCapture(e.pointerId);
   viewport.classList.add('grabbing');
 });
-viewport.addEventListener('pointermove',e=>{
+addEventListener('pointermove',e=>{
   if(!dragging)return;
   const now=performance.now(),x=e.clientX,dx=x-px;
   moved+=Math.abs(dx);
@@ -568,8 +621,8 @@ function endDrag(){
   lastInput=performance.now();
   poke();
 }
-viewport.addEventListener('pointerup',endDrag);
-viewport.addEventListener('pointercancel',endDrag);
+addEventListener('pointerup',endDrag);
+addEventListener('pointercancel',endDrag);
 
 track.addEventListener('click',e=>{
   if(moved>6)return;
@@ -613,26 +666,26 @@ const ENTRIES=[
   {n:'晋国',g:'先秦',s:-1046,e:-376,ap:1,tip:'春秋最强诸侯,三分而成赵魏韩。'},
   {n:'燕国',g:'先秦',s:-1044,e:-222,ap:1,tip:'召公之后,立国北疆的老诸侯。'},
   {n:'楚国',g:'先秦',s:-1042,e:-223,ap:1,tip:'江汉大国,问鼎中原,终灭于秦。'},
-  {n:'秦国',g:'先秦',s:-771,e:-221,tip:'襄公立国,商君变法,六世而并天下。'},
+  {n:'秦国',g:'先秦',s:-771,e:-221,f:'qin-state',tip:'襄公立国,商君变法,六世而并天下。'},
   {n:'东周',g:'先秦',s:-770,e:-256,m:1,tip:'王室衰微,春秋战国五百年。'},
   {n:'吴国',g:'先秦',s:-585,e:-473,tip:'寿梦称王,西破强楚,北会黄池。'},
   {n:'越国',g:'先秦',s:-510,e:-306,ap:1,tip:'勾践卧薪尝胆,灭吴而霸中原。'},
   {n:'赵国',g:'先秦',s:-403,e:-222,tip:'胡服骑射,战国后期抗秦主力。'},
   {n:'魏国',g:'先秦',s:-403,e:-225,tip:'李悝变法最先强,桂陵马陵盛极而衰。'},
   {n:'韩国',g:'先秦',s:-403,e:-230,tip:'三家分晋而立,劲弩强于天下。'},
-  {n:'秦朝',g:'秦汉',s:-221,e:-207,m:1,tip:'十五年而亡,却奠定两千年帝制。'},
-  {n:'西汉',g:'秦汉',s:-202,e:8,m:1,tip:'文景之治,汉武开疆,丝路西通。'},
+  {n:'秦朝',g:'秦汉',s:-221,e:-207,m:1,f:'qin-dynasty',tip:'十五年而亡,却奠定两千年帝制。'},
+  {n:'西汉',g:'秦汉',s:-202,e:8,m:1,f:'western-han',tip:'文景之治,汉武开疆,丝路西通。'},
   {n:'新',g:'秦汉',s:9,e:23,m:1,tip:'王莽代汉改制,一世而终。'},
-  {n:'东汉',g:'秦汉',s:25,e:220,m:1,tip:'光武中兴,蔡伦造纸。'},
-  {n:'曹魏',g:'魏晋南北朝',s:220,e:266,tip:'挟天子以令诸侯,禅代自此始。'},
-  {n:'蜀汉',g:'魏晋南北朝',s:221,e:263,tip:'昭烈继统,鞠躬尽瘁,炎汉终章。'},
-  {n:'孙吴',g:'魏晋南北朝',s:229,e:280,tip:'坐断东南战未休,三分最久。'},
-  {n:'西晋',g:'魏晋南北朝',s:266,e:316,m:1,tip:'三分归一统,八王之乱起。'},
-  {n:'东晋',g:'魏晋南北朝',s:317,e:420,m:1,tip:'衣冠南渡,淝水之战保半壁。'},
+  {n:'东汉',g:'秦汉',s:25,e:220,m:1,f:'eastern-han',tip:'光武中兴,蔡伦造纸。'},
+  {n:'曹魏',g:'魏晋南北朝',s:220,e:266,f:'cao-wei',tip:'挟天子以令诸侯,禅代自此始。'},
+  {n:'蜀汉',g:'魏晋南北朝',s:221,e:263,f:'shu-han',tip:'昭烈继统,鞠躬尽瘁,炎汉终章。'},
+  {n:'孙吴',g:'魏晋南北朝',s:229,e:280,f:'sun-wu',tip:'坐断东南战未休,三分最久。'},
+  {n:'西晋',g:'魏晋南北朝',s:266,e:316,m:1,f:'western-jin',tip:'三分归一统,八王之乱起。'},
+  {n:'东晋',g:'魏晋南北朝',s:317,e:420,m:1,f:'eastern-jin',tip:'衣冠南渡,淝水之战保半壁。'},
   {n:'北朝',g:'魏晋南北朝',s:386,e:581,tip:'北魏一统北方,后分东西、齐周。'},
   {n:'南朝',g:'魏晋南北朝',s:420,e:589,m:1,tip:'宋齐梁陈,佛寺烟雨江南。'},
-  {n:'隋',g:'隋唐',s:581,e:618,m:1,tip:'再造一统,运河贯通南北。'},
-  {n:'唐',g:'隋唐',s:618,e:907,m:1,tip:'贞观开元,万国衣冠拜冕旒。'},
+  {n:'隋',g:'隋唐',s:581,e:618,m:1,f:'sui',tip:'再造一统,运河贯通南北。'},
+  {n:'唐',g:'隋唐',s:618,e:907,m:1,f:'tang',tip:'贞观开元,万国衣冠拜冕旒。'},
   {n:'杨吴',g:'宋元',s:902,e:937,tip:'江淮割据,禅位于南唐。'},
   {n:'后梁',g:'宋元',s:907,e:923,m:1,tip:'朱温代唐,五代之始。'},
   {n:'吴越',g:'宋元',s:907,e:978,tip:'保境安民三世,最终纳土归宋。'},
@@ -647,13 +700,13 @@ const ENTRIES=[
   {n:'后汉',g:'宋元',s:947,e:950,m:1,tip:'两代而亡,最短命的朝代。'},
   {n:'北汉',g:'宋元',s:951,e:979,tip:'沙陀刘氏,晋阳坚守廿八年。'},
   {n:'后周',g:'宋元',s:951,e:960,m:1,tip:'郭威柴荣改革,为宋铺路。'},
-  {n:'北宋',g:'宋元',s:960,e:1127,m:1,tip:'清明上河图里的市井繁华。'},
-  {n:'南宋',g:'宋元',s:1127,e:1279,m:1,tip:'偏安临安,海上丝路通达。'},
-  {n:'元',g:'宋元',s:1271,e:1368,m:1,tip:'疆域空前,东西商路畅达。'},
-  {n:'明',g:'明清',s:1368,e:1644,m:1,tip:'郑和七下西洋,永乐修大典。'},
-  {n:'清',g:'明清',s:1644,e:1912,m:1,tip:'康乾之后,帝制于辛亥落幕。'},
-  {n:'中华民国',g:'近现代',s:1912,e:1949,m:1,tip:'亚洲第一个共和国。'},
-  {n:'中华人民共和国',g:'近现代',s:1949,e:NOW,now:1,m:1,tip:'站起来、富起来、强起来。'}
+  {n:'北宋',g:'宋元',s:960,e:1127,m:1,f:'northern-song',tip:'清明上河图里的市井繁华。'},
+  {n:'南宋',g:'宋元',s:1127,e:1279,m:1,f:'southern-song',tip:'偏安临安,海上丝路通达。'},
+  {n:'元',g:'宋元',s:1271,e:1368,m:1,f:'yuan',tip:'疆域空前,东西商路畅达。'},
+  {n:'明',g:'明清',s:1368,e:1644,m:1,f:'ming',tip:'郑和七下西洋,永乐修大典。'},
+  {n:'清',g:'明清',s:1644,e:1912,m:1,f:'qing',tip:'康乾之后,帝制于辛亥落幕。'},
+  {n:'中华民国',g:'近现代',s:1912,e:1949,m:1,f:'roc',tip:'亚洲第一个共和国。'},
+  {n:'中华人民共和国',g:'近现代',s:1949,e:NOW,now:1,m:1,f:'prc',tip:'站起来、富起来、强起来。'}
 ];
 const PALETTE={
   '先秦':{f:'#6f6d5f',b:'#4e4c40'},
@@ -691,10 +744,7 @@ function packLanes(){
 }
 
 function buildTimeMap(){
-  ctrl=NODES.map((n,i)=>{
-    const el=track.querySelector('.node[data-idx="'+i+'"]');
-    return {x:el.offsetLeft+el.offsetWidth/2,y:n.y};
-  });
+  ctrl=domNodes.map(el=>({x:el.offsetLeft+el.offsetWidth/2,y:+el.dataset.y}));
 }
 
 function yearToX(y){
@@ -713,9 +763,13 @@ function yearToX(y){
   return cN.x+(y-cN.y)*k;
 }
 
+const LANE_NOTE=location.protocol==='file:'
+  ?'文件直开模式 · 事件明细需经 HTTP 服务加载'
+  :'历代政权泳道 · 悬停查看 · 点击展开该政权历史事件';
+
 function renderLanes(){
   const TW=track.scrollWidth;
-  laneAxis.innerHTML='<span class="lane-note">历代政权泳道 · 悬停查看 · 点击跳转对应节点</span>';
+  laneAxis.innerHTML='<span class="lane-note">'+LANE_NOTE+'</span>';
   laneCanvas.innerHTML='';
   ctrl.forEach(c=>{
     const tk=document.createElement('div');
@@ -738,7 +792,7 @@ function renderLanes(){
       const l=Math.max(0,yearToX(d.s)),r=Math.min(yearToX(d.e),TW-24);
       if(r<=l)return;
       const bar=document.createElement('div');
-      bar.className='lane-bar';
+      bar.className='lane-bar'+(d.f?' data':'')+(loadedRegimes.has(d.n)?' done':'')+(loadingSet.has(d.n)?' loading':'');
       bar.dataset.i=idx;
       bar.style.left=l+'px';
       bar.style.width=Math.max(2,r-l)+'px';
@@ -763,6 +817,11 @@ function renderLanes(){
   });
   laneCanvas.style.height='calc(var(--laneH) * '+gLanes.length+')';
   laneWrap.style.height='calc(var(--laneH) * '+gLanes.length+' + 34px)';
+  if(gLastY!=null)syncBars(gLastY);
+  if(gLastIdx!=null&&ctrl[gLastIdx]){
+    laneGuide.style.display='block';
+    laneGuide.style.left=ctrl[gLastIdx].x+'px';
+  }
 }
 
 function syncBars(y){
@@ -775,9 +834,12 @@ function syncBars(y){
   });
 }
 
+let gLastY=null,gLastIdx=null;
 function syncGanttHighlight(idx){
   if(idx==null||idx<0)return;
-  syncBars(NODES[idx].y);
+  gLastIdx=idx;
+  gLastY=ctrl[idx].y;
+  syncBars(gLastY);
   laneGuide.style.display='block';
   laneGuide.style.left=ctrl[idx].x+'px';
 }
@@ -788,7 +850,9 @@ laneCanvas.addEventListener('mousemove',e=>{
   const d=ENTRIES[+b.dataset.i];
   const dur=(d.now?NOW:d.e)-d.s;
   laneTip.innerHTML='<b>'+d.n+'</b><span class="y">'+(d.ap?'约':'')+fmtYear(d.s)+' — '
-    +(d.now?'今':(d.ap?'约':'')+fmtYear(d.e))+' · '+dur+'年</span><p>'+d.tip+'</p>';
+    +(d.now?'今':(d.ap?'约':'')+fmtYear(d.e))+' · '+dur+'年</span><p>'+d.tip+'</p>'
+    +(d.f?'<i>'+(loadedRegimes.has(d.n)?'点击收起事件明细':'点击加载事件明细')+'</i>'
+      :(location.protocol==='file:'?'<i>文件直开无法加载,需 HTTP 服务</i>':''));
   const vr=viewport.getBoundingClientRect();
   let tx=e.clientX-vr.left+current+14;
   const ty=e.clientY-vr.top-laneWrap.offsetTop;
@@ -803,24 +867,117 @@ laneCanvas.addEventListener('click',e=>{
   if(moved>6)return;
   const b=e.target.closest('.lane-bar');
   if(!b)return;
-  const d=ENTRIES[+b.dataset.i];
-  const inSpan=NODES.map((n,j)=>({j,dd:Math.abs(n.y-(d.s+d.e)/2)}))
-    .filter(o=>NODES[o.j].y>=d.s&&NODES[o.j].y<=d.e);
-  let pick;
+  toggleRegime(ENTRIES[+b.dataset.i]);
+});
+
+const loadedRegimes=new Set(),loadingSet=new Set();
+
+function fetchRegimeEvents(d){
+  if(!d.f||location.protocol==='file:')return Promise.resolve(null);
+  return Promise.all([
+    fetch('data/regimes/'+d.f+'.json')
+      .then(r=>r.ok?r.json():null)
+      .catch(()=>null),
+    new Promise(r=>setTimeout(r,300))
+  ]).then(a=>a[0]&&a[0].events?a[0].events:null);
+}
+
+let toastTimer=null;
+function toast(msg){
+  const t=$('#toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+function insertDetailNodes(regime,evts){
+  const reg=ENTRIES.find(x=>x.n===regime),pc=PALETTE[reg.g];
+  const made=[];
+  evts.slice().sort((a,b)=>a.y-b.y).forEach(ev=>{
+    const el=document.createElement('article');
+    el.className='node detail';
+    el.dataset.y=ev.y;
+    el.dataset.era=regime;
+    el.dataset.title=ev.t;
+    el.dataset.regime=regime;
+    el.dataset.ytxt=(ev.p?ev.p+' ':'')+Math.abs(ev.y);
+    el.innerHTML=
+      '<div class="card" style="border-left-color:'+pc.f+'">'+
+      '<span class="chip" style="background:'+pc.f+';border-color:'+pc.b+';color:#f6efdd">'+regime+'</span>'+
+      '<h3 class="year"><em>'+(ev.p||'')+'</em>'+Math.abs(ev.y)+'</h3>'+
+      '<h4 class="title">'+ev.t+'</h4>'+
+      '<p class="desc">'+ev.d+'</p></div>'+
+      '<span class="connector"></span><span class="dot" style="border-color:'+pc.f+'"></span>';
+    let ref=null;
+    for(const n of domNodes){
+      if(+n.dataset.y<=ev.y)ref=n;else break;
+    }
+    track.insertBefore(el,ref?ref.nextSibling:$('#outro'));
+    refreshNodes();
+    made.push(el);
+  });
+  made.forEach(el=>{
+    el.classList.add(domNodes.indexOf(el)%2?'down':'up');
+  });
+  return made;
+}
+
+function rebuildAfterChange(){
+  refreshNodes();
+  buildTimeMap();
+  renderLanes();
+  measure();
+}
+
+async function toggleRegime(d){
+  const name=d.n;
+  if(track.querySelector('.node[data-regime="'+name+'"]')){
+    track.querySelectorAll('.node[data-regime="'+name+'"]').forEach(el=>el.remove());
+    loadedRegimes.delete(name);
+    rebuildAfterChange();
+    toast('已收起 '+name+' 明细');
+    return;
+  }
+  if(loadingSet.has(name))return;
+  loadingSet.add(name);
+  const bar=laneCanvas.querySelector('.lane-bar[data-i="'+ENTRIES.indexOf(d)+'"]');
+  if(bar)bar.classList.add('loading');
+  const evts=await fetchRegimeEvents(d);
+  loadingSet.delete(name);
+  if(bar)bar.classList.remove('loading');
+  if(!evts||!evts.length){
+    toast(location.protocol==='file:'
+      ?'文件直开无法加载数据,请经 HTTP 服务访问(如 python3 -m http.server)'
+      :name+' · 明细编纂中,已跳到相近节点');
+    goToAnchor(mapRegimeToNode(d)+1);
+    poke();
+    return;
+  }
+  const made=insertDetailNodes(name,evts);
+  loadedRegimes.add(name);
+  rebuildAfterChange();
+  goToAnchor(domNodes.indexOf(made[0])+1);
+  poke();
+  toast('已展开 '+name+' · '+evts.length+' 则事件,再点泳道条可收起');
+}
+
+function mapRegimeToNode(d){
+  const yrs=domNodes.map(el=>+el.dataset.y);
+  const mid=(d.s+d.e)/2;
+  const inSpan=yrs.map((y,j)=>({j,dd:Math.abs(y-mid)})).filter(o=>yrs[o.j]>=d.s&&yrs[o.j]<=d.e);
   if(inSpan.length){
     inSpan.sort((a,b2)=>a.dd-b2.dd);
-    pick=inSpan[0].j;
-  }else{
-    let bi=-1;
-    NODES.forEach((n,j)=>{if(n.y<d.s)bi=j});
-    const ai=NODES.findIndex(n=>n.y>d.e);
-    const db=bi>=0?d.s-NODES[bi].y:Infinity;
-    const da=ai>=0?NODES[ai].y-d.e:Infinity;
-    pick=(da<=250&&da<db)?ai:(bi>=0?bi:Math.max(ai,0));
+    return inSpan[0].j;
   }
-  goToAnchor(pick+1);
-  poke();
-});
+  let bi=-1;
+  yrs.forEach((y,j)=>{if(y<d.s)bi=j});
+  let ai=-1;
+  for(let j=0;j<yrs.length;j++){if(yrs[j]>d.e){ai=j;break}}
+  const db=bi>=0?d.s-yrs[bi]:Infinity;
+  const da=ai>=0?yrs[ai]-d.e:Infinity;
+  return (da<=250&&da<db)?ai:(bi>=0?bi:Math.max(ai,0));
+}
 
 buildNodes();
 buildTimeMap();
