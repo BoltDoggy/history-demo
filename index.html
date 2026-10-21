@@ -90,7 +90,8 @@ body{
   will-change:transform;
 }
 .axis{
-  position:absolute;left:0;right:0;top:50%;height:3px;transform:translateY(-50%);
+  position:absolute;left:0;right:0;top:var(--axisY,50%);height:3px;transform:translateY(-50%);
+  transition:top .5s ease;
   background:linear-gradient(90deg, transparent, rgba(58,52,42,.55) 3%, rgba(58,52,42,.55) 97%, transparent);
 }
 .axis::after{
@@ -136,18 +137,19 @@ body{
   cursor:pointer;
 }
 .dot{
-  position:absolute;left:50%;top:50%;width:17px;height:17px;border-radius:50%;
+  position:absolute;left:50%;top:var(--axisY,50%);width:17px;height:17px;border-radius:50%;
   transform:translate(-50%,-50%);
   background:var(--paper-2);border:3px solid rgba(58,52,42,.75);
-  transition:background .3s,border-color .3s,box-shadow .3s;
+  transition:background .3s,border-color .3s,box-shadow .3s,top .5s ease;
   z-index:2;
 }
 .connector{
   position:absolute;left:calc(50% - 1px);width:2px;
+  transition:top .5s ease,bottom .5s ease;
   background:linear-gradient(180deg, rgba(58,52,42,.12), rgba(58,52,42,.55));
 }
-.up .connector{bottom:50%;height:46px}
-.down .connector{top:50%;height:46px;background:linear-gradient(0deg, rgba(58,52,42,.12), rgba(58,52,42,.55))}
+.up .connector{bottom:calc(100% - var(--axisY,50%));height:46px}
+.down .connector{top:var(--axisY,50%);height:46px;background:linear-gradient(0deg, rgba(58,52,42,.12), rgba(58,52,42,.55))}
 .card{
   position:absolute;left:50%;transform:translateX(-50%);
   width:302px;padding:18px 22px 17px;
@@ -155,10 +157,10 @@ body{
   border:1px solid rgba(96,76,44,.28);
   border-radius:3px;
   box-shadow:0 10px 26px -16px rgba(43,38,32,.45), inset 0 0 0 4px rgba(255,255,255,.25);
-  transition:border-color .3s,box-shadow .3s;
+  transition:border-color .3s,box-shadow .3s,top .5s ease,bottom .5s ease;
 }
-.up .card{bottom:calc(50% + 58px)}
-.down .card{top:calc(50% + 58px)}
+.up .card{bottom:calc(100% - var(--axisY,50%) + 58px)}
+.down .card{top:calc(var(--axisY,50%) + 58px)}
 .chip{
   display:inline-block;padding:2px 10px;margin-bottom:8px;
   font-size:11px;letter-spacing:3px;color:var(--ink-2);
@@ -240,7 +242,7 @@ body{
 }
 
 .hint{
-  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  position:fixed;bottom:68px;left:50%;transform:translateX(-50%);
   z-index:45;pointer-events:none;
   padding:8px 20px;border-radius:999px;
   background:rgba(43,38,32,.06);border:1px solid rgba(43,38,32,.16);
@@ -255,14 +257,103 @@ body{
   background-image:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
 }
 
+#ganttToggle{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:44;
+  display:flex;align-items:center;gap:8px;height:34px;padding:0 18px;border-radius:999px;
+  border:1px solid rgba(96,76,44,.35);background:rgba(251,246,232,.92);
+  color:#3a342b;font-family:var(--font-kai);font-size:13.5px;letter-spacing:3px;cursor:pointer;
+  box-shadow:0 4px 14px -6px rgba(30,20,8,.35);
+  transition:opacity .3s,transform .2s;
+}
+#ganttToggle:hover{transform:translateX(-50%) translateY(-1px)}
+body.gantt-open #ganttToggle{opacity:0;pointer-events:none}
+
+#gantt{
+  position:fixed;left:44px;right:44px;bottom:0;height:min(52vh,540px);z-index:46;
+  background:linear-gradient(180deg,#f6efdc,#efe5cb);
+  border:1px solid rgba(96,76,44,.3);border-bottom:none;border-radius:10px 10px 0 0;
+  box-shadow:0 -12px 40px -12px rgba(30,20,8,.35);
+  transform:translateY(105%);visibility:hidden;
+  transition:transform .55s cubic-bezier(.22,.9,.26,1),visibility 0s .55s;
+}
+#gantt.open{transform:translateY(0);visibility:visible;transition:transform .55s cubic-bezier(.22,.9,.26,1),visibility 0s 0s}
+.g-head{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid rgba(96,76,44,.2)}
+.g-title{font-family:var(--font-kai);font-size:14.5px;letter-spacing:3px;color:#3a342b;margin-right:auto}
+.g-btn{
+  height:26px;padding:0 12px;font-size:12px;letter-spacing:1px;color:var(--ink-2);
+  background:rgba(255,253,246,.6);border:1px solid rgba(96,76,44,.3);border-radius:6px;
+  cursor:pointer;font-family:var(--font-song);
+}
+.g-btn:hover{background:rgba(43,38,32,.08)}
+.g-body{position:absolute;top:44px;left:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden}
+.g-body::-webkit-scrollbar{width:8px}
+.g-body::-webkit-scrollbar-thumb{background:rgba(90,81,66,.3);border-radius:4px}
+.g-main{position:relative;min-height:100%}
+.g-lbl{
+  position:absolute;top:50%;transform:translateY(-50%);
+  font-size:11.5px;color:var(--ink-2);font-family:var(--font-kai);
+  letter-spacing:1px;white-space:nowrap;pointer-events:none;
+}
+.g-axis{height:30px;position:sticky;top:0;z-index:2;background:#f3ecd9}
+.g-tick{
+  position:absolute;top:7px;transform:translateX(-50%);
+  font-size:10.5px;color:var(--ink-3);font-family:var(--font-song);white-space:nowrap;
+}
+.g-canvas{position:relative}
+.g-row{position:absolute;left:0;right:0;height:26px}
+.g-row:hover{background:rgba(43,38,32,.045)}
+.g-grid{position:absolute;top:0;bottom:0;width:1px;background:rgba(43,38,32,.08)}
+.g-bar{
+  position:absolute;top:4px;height:18px;border-radius:3px;border:1px solid;opacity:.88;
+  cursor:pointer;transition:opacity .2s,box-shadow .2s;
+}
+.g-bar:hover{opacity:1}
+.g-bar.on{opacity:1;box-shadow:0 0 0 2px rgba(166,59,40,.3);border-color:#a63b28}
+.g-bar span{
+  position:absolute;left:6px;top:50%;transform:translateY(-50%);
+  color:#f6efdd;font-size:11px;letter-spacing:1px;white-space:nowrap;
+  font-family:var(--font-song);pointer-events:none;
+}
+.g-play{
+  position:absolute;top:30px;bottom:0;width:2px;background:var(--cinnabar);z-index:4;
+  box-shadow:0 0 6px rgba(166,59,40,.45);transition:left .35s ease;pointer-events:none;
+}
+.g-play i{
+  position:absolute;top:-26px;left:50%;transform:translateX(-50%);
+  background:var(--cinnabar);color:#f8f1de;font-style:normal;
+  font-size:10.5px;letter-spacing:1px;padding:2px 8px;border-radius:3px;white-space:nowrap;
+  max-width:34vw;overflow:hidden;text-overflow:ellipsis;
+}
+.g-tip{
+  position:absolute;z-index:6;pointer-events:none;display:none;
+  background:#fbf6e8;border:1px solid rgba(96,76,44,.35);border-radius:4px;
+  box-shadow:0 8px 20px -8px rgba(43,38,32,.4);
+  padding:8px 12px;min-width:170px;max-width:260px;
+}
+.g-tip b{font-family:var(--font-kai);font-size:13.5px;font-weight:600;display:block;margin-bottom:2px}
+.g-tip .y{font-size:11px;color:var(--ink-2);display:block;margin-bottom:3px;letter-spacing:.5px}
+.g-tip p{font-size:11px;color:var(--ink-2);line-height:1.65;margin:0}
+
+body.gantt-open #viewport{--axisY:32%}
+body.gantt-open .node .connector{height:40px}
+body.gantt-open .card{width:264px;padding:12px 15px 11px}
+body.gantt-open .chip{margin-bottom:5px;font-size:10px;letter-spacing:2px}
+body.gantt-open .year{font-size:25px}
+body.gantt-open .year em{font-size:15px}
+body.gantt-open .title{font-size:17px;margin:1px 0 5px}
+body.gantt-open .desc{font-size:12px;line-height:1.7}
+body.gantt-open .up .card{bottom:calc(100% - var(--axisY) + 52px)}
+body.gantt-open .down .card{top:auto;bottom:calc(100% - var(--axisY) + 52px)}
+body.gantt-open .down .connector{top:auto;bottom:calc(100% - var(--axisY))}
+
 @media (max-height:660px){
   .card{width:262px;padding:13px 16px 12px}
   .year{font-size:27px}
   .title{font-size:18px}
   .desc{font-size:12.5px;line-height:1.75}
   .node{width:280px;margin-right:130px}
-  .up .card{bottom:calc(50% + 50px)}
-  .down .card{top:calc(50% + 50px)}
+  .up .card{bottom:calc(100% - var(--axisY,50%) + 50px)}
+  .down .card{top:calc(var(--axisY,50%) + 50px)}
 }
 @media (max-width:760px){
   :root{--edge:20px}
@@ -271,6 +362,8 @@ body{
   .brand span:last-child{display:none}
   .era{font-size:13px;letter-spacing:2px}
   .hint{font-size:11px;letter-spacing:2px}
+  #gantt{left:6px;right:6px;height:60vh}
+  .g-play i{max-width:30vw}
 }
 </style>
 </head>
@@ -320,26 +413,47 @@ body{
   </div>
 </header>
 
-<div class="hint" id="hint">滚轮 · 拖拽 · ← → 方向键 · 点击刻度,横向浏览长卷</div>
+<div class="hint" id="hint">滚轮 · 拖拽 · ← → 浏览长卷 · G 或下方按钮展开泳道时间线</div>
+<button id="ganttToggle" aria-label="展开泳道时间线">
+  <svg viewBox="0 0 16 16" width="16" height="16" fill="#a63b28" aria-hidden="true"><rect x="1" y="2.2" width="8.5" height="2.6" rx="1"/><rect x="5" y="6.7" width="10" height="2.6" rx="1"/><rect x="2.5" y="11.2" width="7" height="2.6" rx="1"/></svg>
+  泳道时间线
+</button>
+<section id="gantt" aria-hidden="true">
+  <div class="g-head">
+    <span class="g-title">历代政权 · 泳道时间线</span>
+    <button class="g-btn" id="gZoomIn">放大</button>
+    <button class="g-btn" id="gZoomOut">缩小</button>
+    <button class="g-btn" id="gReset">重置</button>
+    <button class="g-btn" id="gClose">收起</button>
+  </div>
+  <div class="g-body">
+    <div class="g-main" id="gMain">
+      <div class="g-axis" id="gAxis"></div>
+      <div class="g-canvas" id="gCanvas"></div>
+      <div class="g-play" id="gPlay"><i></i></div>
+      <div class="g-tip" id="gTip"></div>
+    </div>
+  </div>
+</section>
 <div class="grain"></div>
 
 <script>
 const NODES=[
-  {p:'约前',n:'2070',era:'先秦',title:'夏朝建立',desc:'禹会诸侯于涂山,天下咸朝;传位于启,家天下自此而始,华夏文明迎来最早的国家形态。'},
-  {p:'前',n:'1046',era:'先秦',title:'牧野之战',desc:'武王伐纣,商周鼎革。分封诸侯,制礼作乐,礼乐文明泽被此后三千年。'},
-  {p:'前',n:'770',era:'先秦',title:'平王东迁',desc:'周室东迁洛邑,王纲坠而霸政兴。春秋五百年,诸侯逐鹿,百家争鸣。'},
-  {p:'前',n:'221',era:'秦汉',title:'秦扫六合',desc:'始皇并吞六国,书同文,车同轨,行郡县。帝制中国的框架自此肇端。'},
-  {p:'前',n:'202',era:'秦汉',title:'汉室开国',desc:'刘邦垓下胜楚,即皇帝位。文景养民,汉武开疆,丝绸之路自此西通。'},
-  {p:'',n:'581',era:'隋唐',title:'隋定天下',desc:'杨坚受禅建隋,结束近三百年分裂。开科举,通运河,为盛唐蓄势。'},
-  {p:'',n:'618',era:'隋唐',title:'大唐开元',desc:'贞观之治,开元全盛。长安万国来朝,诗歌与胡乐在朱雀大街上相遇。'},
-  {p:'',n:'960',era:'宋元',title:'陈桥兵变',desc:'赵匡胤黄袍加身,立国北宋。市井繁华,理学兴起,文明臻于精致。'},
-  {p:'',n:'1271',era:'宋元',title:'大元一统',desc:'忽必烈建号大元,定都大都。疆域空前辽阔,东西方商路驼铃相闻。'},
-  {p:'',n:'1368',era:'明清',title:'大明开国',desc:'朱元璋北伐驱逐元廷,定都南京。郑和七下西洋,《永乐大典》成书。'},
-  {p:'',n:'1644',era:'明清',title:'清军入关',desc:'明清鼎革,定鼎北京。康乾盛世之后闭关自守,大变局在承平中酝酿。'},
-  {p:'',n:'1911',era:'近现代',title:'辛亥革命',desc:'武昌一声枪响,两千年帝制落幕。亚洲第一个共和国,于风雨中新生。'},
-  {p:'',n:'1949',era:'近现代',title:'开国大典',desc:'天安门城楼上一声宣告:中国人民从此站起来了。历史翻开新页。'},
-  {p:'',n:'1978',era:'近现代',title:'改革开放',desc:'十一届三中全会春雷响起。小岗破冰,深圳春潮涌动,中国奔赴现代化。'},
-  {p:'',n:'2001',era:'当代',title:'跻身世贸',desc:'中国加入世界贸易组织,深度融入全球体系,写下经济腾飞的新篇。'}
+  {p:'约前',n:'2070',y:-2070,era:'先秦',title:'夏朝建立',desc:'禹会诸侯于涂山,天下咸朝;传位于启,家天下自此而始,华夏文明迎来最早的国家形态。'},
+  {p:'前',n:'1046',y:-1046,era:'先秦',title:'牧野之战',desc:'武王伐纣,商周鼎革。分封诸侯,制礼作乐,礼乐文明泽被此后三千年。'},
+  {p:'前',n:'770',y:-770,era:'先秦',title:'平王东迁',desc:'周室东迁洛邑,王纲坠而霸政兴。春秋五百年,诸侯逐鹿,百家争鸣。'},
+  {p:'前',n:'221',y:-221,era:'秦汉',title:'秦扫六合',desc:'始皇并吞六国,书同文,车同轨,行郡县。帝制中国的框架自此肇端。'},
+  {p:'前',n:'202',y:-202,era:'秦汉',title:'汉室开国',desc:'刘邦垓下胜楚,即皇帝位。文景养民,汉武开疆,丝绸之路自此西通。'},
+  {p:'',n:'581',y:581,era:'隋唐',title:'隋定天下',desc:'杨坚受禅建隋,结束近三百年分裂。开科举,通运河,为盛唐蓄势。'},
+  {p:'',n:'618',y:618,era:'隋唐',title:'大唐开元',desc:'贞观之治,开元全盛。长安万国来朝,诗歌与胡乐在朱雀大街上相遇。'},
+  {p:'',n:'960',y:960,era:'宋元',title:'陈桥兵变',desc:'赵匡胤黄袍加身,立国北宋。市井繁华,理学兴起,文明臻于精致。'},
+  {p:'',n:'1271',y:1271,era:'宋元',title:'大元一统',desc:'忽必烈建号大元,定都大都。疆域空前辽阔,东西方商路驼铃相闻。'},
+  {p:'',n:'1368',y:1368,era:'明清',title:'大明开国',desc:'朱元璋北伐驱逐元廷,定都南京。郑和七下西洋,《永乐大典》成书。'},
+  {p:'',n:'1644',y:1644,era:'明清',title:'清军入关',desc:'明清鼎革,定鼎北京。康乾盛世之后闭关自守,大变局在承平中酝酿。'},
+  {p:'',n:'1911',y:1911,era:'近现代',title:'辛亥革命',desc:'武昌一声枪响,两千年帝制落幕。亚洲第一个共和国,于风雨中新生。'},
+  {p:'',n:'1949',y:1949,era:'近现代',title:'开国大典',desc:'天安门城楼上一声宣告:中国人民从此站起来了。历史翻开新页。'},
+  {p:'',n:'1978',y:1978,era:'近现代',title:'改革开放',desc:'十一届三中全会春雷响起。小岗破冰,深圳春潮涌动,中国奔赴现代化。'},
+  {p:'',n:'2001',y:2001,era:'当代',title:'跻身世贸',desc:'中国加入世界贸易组织,深度融入全球体系,写下经济腾飞的新篇。'}
 ];
 
 const $=s=>document.querySelector(s);
@@ -421,6 +535,7 @@ function apply(){
       if(tk)tk.classList.add('active');
       const n=NODES[ni-1];
       eraLabel.textContent=n.era+' · '+(n.p?n.p+' ':'')+n.n+' 年';
+      syncGanttHighlight(ni-1);
     }else{
       eraLabel.textContent=ni===0?'卷首 · 华夏长卷':'卷终 · 以史为鉴';
     }
@@ -514,13 +629,302 @@ addEventListener('keydown',e=>{
   else if(k==='ArrowLeft'||k==='PageUp'){nav(-1);e.preventDefault();}
   else if(k==='Home'){goToAnchor(0);e.preventDefault();}
   else if(k==='End'){goToAnchor(anchors.length-1);e.preventDefault();}
+  else if(k==='g'||k==='G'){toggleGantt();e.preventDefault();}
+  else if(k==='Escape'){toggleGantt(false);}
+  else if(k==='+'||k==='='){if(ganttEl.classList.contains('open'))zoomG(.5,1.35);}
+  else if(k==='-'){if(ganttEl.classList.contains('open'))zoomG(.5,1/1.35);}
 });
 
 let rz=null;
-addEventListener('resize',()=>{cancelAnimationFrame(rz);rz=requestAnimationFrame(measure)});
+addEventListener('resize',()=>{cancelAnimationFrame(rz);rz=requestAnimationFrame(()=>{measure();renderGantt();})});
+
+const NOW=new Date().getFullYear();
+const T_MIN=-2150,T_MAX=NOW+40;
+const ENTRIES=[
+  {n:'夏',g:'先秦',s:-2070,e:-1600,ap:1,m:1,tip:'禹启家天下,史载第一个世袭制王朝。'},
+  {n:'商',g:'先秦',s:-1600,e:-1046,ap:1,m:1,tip:'甲骨文与青铜的王朝,殷墟见证鼎盛。'},
+  {n:'西周',g:'先秦',s:-1046,e:-771,m:1,tip:'分封诸侯,制礼作乐;犬戎破镐而终。'},
+  {n:'齐国',g:'先秦',s:-1046,e:-221,ap:1,tip:'姜齐田齐八百年,渔盐之利雄踞东方。'},
+  {n:'晋国',g:'先秦',s:-1046,e:-376,ap:1,tip:'春秋最强诸侯,三分而成赵魏韩。'},
+  {n:'燕国',g:'先秦',s:-1044,e:-222,ap:1,tip:'召公之后,立国北疆的老诸侯。'},
+  {n:'楚国',g:'先秦',s:-1042,e:-223,ap:1,tip:'江汉大国,问鼎中原,终灭于秦。'},
+  {n:'秦国',g:'先秦',s:-771,e:-221,tip:'襄公立国,商君变法,六世而并天下。'},
+  {n:'东周',g:'先秦',s:-770,e:-256,m:1,tip:'王室衰微,春秋战国五百年。'},
+  {n:'吴国',g:'先秦',s:-585,e:-473,tip:'寿梦称王,西破强楚,北会黄池。'},
+  {n:'越国',g:'先秦',s:-510,e:-306,ap:1,tip:'勾践卧薪尝胆,灭吴而霸中原。'},
+  {n:'赵国',g:'先秦',s:-403,e:-222,tip:'胡服骑射,战国后期抗秦主力。'},
+  {n:'魏国',g:'先秦',s:-403,e:-225,tip:'李悝变法最先强,桂陵马陵盛极而衰。'},
+  {n:'韩国',g:'先秦',s:-403,e:-230,tip:'三家分晋而立,劲弩强于天下。'},
+  {n:'秦朝',g:'秦汉',s:-221,e:-207,m:1,tip:'十五年而亡,却奠定两千年帝制。'},
+  {n:'西汉',g:'秦汉',s:-202,e:8,m:1,tip:'文景之治,汉武开疆,丝路西通。'},
+  {n:'新',g:'秦汉',s:9,e:23,m:1,tip:'王莽代汉改制,一世而终。'},
+  {n:'东汉',g:'秦汉',s:25,e:220,m:1,tip:'光武中兴,蔡伦造纸。'},
+  {n:'曹魏',g:'魏晋南北朝',s:220,e:266,tip:'挟天子以令诸侯,禅代自此始。'},
+  {n:'蜀汉',g:'魏晋南北朝',s:221,e:263,tip:'昭烈继统,鞠躬尽瘁,炎汉终章。'},
+  {n:'孙吴',g:'魏晋南北朝',s:229,e:280,tip:'坐断东南战未休,三分最久。'},
+  {n:'西晋',g:'魏晋南北朝',s:266,e:316,m:1,tip:'三分归一统,八王之乱起。'},
+  {n:'东晋',g:'魏晋南北朝',s:317,e:420,m:1,tip:'衣冠南渡,淝水之战保半壁。'},
+  {n:'北朝',g:'魏晋南北朝',s:386,e:581,tip:'北魏一统北方,后分东西、齐周。'},
+  {n:'南朝',g:'魏晋南北朝',s:420,e:589,m:1,tip:'宋齐梁陈,佛寺烟雨江南。'},
+  {n:'隋',g:'隋唐',s:581,e:618,m:1,tip:'再造一统,运河贯通南北。'},
+  {n:'唐',g:'隋唐',s:618,e:907,m:1,tip:'贞观开元,万国衣冠拜冕旒。'},
+  {n:'杨吴',g:'宋元',s:902,e:937,tip:'江淮割据,禅位于南唐。'},
+  {n:'后梁',g:'宋元',s:907,e:923,m:1,tip:'朱温代唐,五代之始。'},
+  {n:'吴越',g:'宋元',s:907,e:978,tip:'保境安民三世,最终纳土归宋。'},
+  {n:'南楚',g:'宋元',s:907,e:951,tip:'马氏据湖南,银茶之利。'},
+  {n:'前蜀',g:'宋元',s:907,e:925,tip:'王建据蜀,骄奢而亡。'},
+  {n:'闽',g:'宋元',s:909,e:945,tip:'王氏据福建,骄淫致乱。'},
+  {n:'南汉',g:'宋元',s:917,e:971,tip:'刘氏据岭南,暴虐亡国。'},
+  {n:'后唐',g:'宋元',s:923,e:936,m:1,tip:'沙陀李氏,灭梁续唐号。'},
+  {n:'荆南',g:'宋元',s:924,e:963,tip:'十国最小,四面称臣。'},
+  {n:'后蜀',g:'宋元',s:934,e:965,tip:'孟昶治蜀,天府偏安。'},
+  {n:'后晋',g:'宋元',s:936,e:947,m:1,tip:'割燕云十六州,引狼入室。'},
+  {n:'后汉',g:'宋元',s:947,e:950,m:1,tip:'两代而亡,最短命的朝代。'},
+  {n:'北汉',g:'宋元',s:951,e:979,tip:'沙陀刘氏,晋阳坚守廿八年。'},
+  {n:'后周',g:'宋元',s:951,e:960,m:1,tip:'郭威柴荣改革,为宋铺路。'},
+  {n:'北宋',g:'宋元',s:960,e:1127,m:1,tip:'清明上河图里的市井繁华。'},
+  {n:'南宋',g:'宋元',s:1127,e:1279,m:1,tip:'偏安临安,海上丝路通达。'},
+  {n:'元',g:'宋元',s:1271,e:1368,m:1,tip:'疆域空前,东西商路畅达。'},
+  {n:'明',g:'明清',s:1368,e:1644,m:1,tip:'郑和七下西洋,永乐修大典。'},
+  {n:'清',g:'明清',s:1644,e:1912,m:1,tip:'康乾之后,帝制于辛亥落幕。'},
+  {n:'中华民国',g:'近现代',s:1912,e:1949,m:1,tip:'亚洲第一个共和国。'},
+  {n:'中华人民共和国',g:'近现代',s:1949,e:NOW,now:1,m:1,tip:'站起来、富起来、强起来。'}
+];
+const PALETTE={
+  '先秦':{f:'#6f6d5f',b:'#4e4c40'},
+  '秦汉':{f:'#8a5a3a',b:'#63401f'},
+  '魏晋南北朝':{f:'#5e7a5a',b:'#42573f'},
+  '隋唐':{f:'#96473a',b:'#6e3025'},
+  '宋元':{f:'#41586e',b:'#2c3d4e'},
+  '明清':{f:'#3f4a6b',b:'#2a3247'},
+  '近现代':{f:'#a63b28',b:'#7c2a1c'}
+};
+const ganttEl=$('#gantt'),gCanvas=$('#gCanvas'),gAxis=$('#gAxis'),
+      gTip=$('#gTip'),gPlay=$('#gPlay'),gMain=$('#gMain'),gToggle=$('#ganttToggle');
+const LANE_H=26;
+let gView={t0:T_MIN,t1:T_MAX},gDrag=null,gMoved=0,gActiveYear=null,gFlag='',
+    gLanes=[],gLaneOf=[];
+
+function fmtYear(y){return y<0?'前'+(-y):(y===0?'元年':''+y)}
+
+function packLanes(){
+  const order=ENTRIES.map((d,i)=>i).sort((a,b)=>{
+    const A=ENTRIES[a],B=ENTRIES[b];
+    if(A.s!==B.s)return A.s-B.s;
+    const am=A.m?1:0,bm=B.m?1:0;
+    if(am!==bm)return bm-am;
+    return B.e-A.e;
+  });
+  const fits=(d,l)=>d.s>l.end||(d.m&&d.s===l.end);
+  gLanes=[];gLaneOf=[];
+  order.forEach(i=>{
+    const d=ENTRIES[i];
+    let li=gLanes.findIndex(l=>fits(d,l));
+    if(li<0){gLanes.push({end:d.e,items:[]});li=gLanes.length-1;}
+    else gLanes[li].end=d.e;
+    gLanes[li].items.push(i);
+    gLaneOf[i]=li;
+  });
+}
+
+function renderGantt(){
+  const W=gCanvas.clientWidth;
+  if(!W)return;
+  gCanvas.innerHTML='';
+  gAxis.innerHTML='';
+  const span=gView.t1-gView.t0;
+  const x=t=>(t-gView.t0)/span*W;
+  const step=[2000,1000,500,200,100,50,20,10,5,2,1].find(s=>span/s<=12)||1;
+  for(let t=Math.ceil(gView.t0/step)*step;t<=gView.t1;t+=step){
+    const tk=document.createElement('div');
+    tk.className='g-tick';
+    tk.style.left=(x(t)/W*100)+'%';
+    tk.textContent=fmtYear(t);
+    gAxis.appendChild(tk);
+    const g=document.createElement('div');
+    g.className='g-grid';
+    g.style.left=(x(t)/W*100)+'%';
+    gCanvas.appendChild(g);
+  }
+  gLanes.forEach((lane,li)=>{
+    const row=document.createElement('div');
+    row.className='g-row';
+    row.style.top=li*LANE_H+'px';
+    gCanvas.appendChild(row);
+    lane.items.forEach((idx,k)=>{
+      const d=ENTRIES[idx];
+      const l=x(d.s),r=x(d.e);
+      if(r<=0||l>=W)return;
+      const cl=Math.max(l,0),cr=Math.min(r,W);
+      const bar=document.createElement('div');
+      bar.className='g-bar';
+      bar.dataset.i=idx;
+      bar.style.left=cl+'px';
+      bar.style.width=Math.max(2,cr-cl)+'px';
+      const p=PALETTE[d.g];
+      bar.style.background=p.f;
+      bar.style.borderColor=p.b;
+      const lblW=d.n.length*13+12;
+      if(cr-cl>lblW+8){
+        bar.innerHTML='<span>'+d.n+'</span>';
+      }else{
+        const lim=k+1<lane.items.length?x(ENTRIES[lane.items[k+1]].s):W;
+        if(lim-cr>lblW+8&&cr+6+lblW<=W){
+          const lb=document.createElement('span');
+          lb.className='g-lbl';
+          lb.textContent=d.n;
+          lb.style.left=(cr+6)+'px';
+          row.appendChild(lb);
+        }
+      }
+      row.appendChild(bar);
+    });
+  });
+  gCanvas.style.height=gLanes.length*LANE_H+'px';
+  if(gActiveYear!=null)syncBars(gActiveYear);
+  positionPlayhead();
+}
+
+function syncBars(y){
+  gCanvas.querySelectorAll('.g-bar.on').forEach(e=>e.classList.remove('on'));
+  ENTRIES.forEach((d,i)=>{
+    if(y>=d.s&&y<=d.e){
+      const b=gCanvas.querySelector('.g-bar[data-i="'+i+'"]');
+      if(b)b.classList.add('on');
+    }
+  });
+}
+
+function positionPlayhead(){
+  if(gActiveYear==null){gPlay.style.display='none';return}
+  const W=gCanvas.clientWidth;
+  if(!W)return;
+  const x=(gActiveYear-gView.t0)/(gView.t1-gView.t0)*W;
+  gPlay.style.display=(x<-4||x>W+4)?'none':'block';
+  gPlay.style.left=x+'px';
+  gPlay.querySelector('i').textContent=gFlag;
+}
+
+function syncGanttHighlight(idx){
+  if(idx==null||idx<0)return;
+  const n=NODES[idx];
+  gActiveYear=n.y;
+  gFlag=n.title+' · '+fmtYear(n.y);
+  syncBars(n.y);
+  positionPlayhead();
+}
+
+function toggleGantt(force){
+  const open=force!==undefined?force:!ganttEl.classList.contains('open');
+  ganttEl.classList.toggle('open',open);
+  ganttEl.setAttribute('aria-hidden',String(!open));
+  document.body.classList.toggle('gantt-open',open);
+  if(open)renderGantt();
+}
+
+function zoomG(fx,f){
+  const span0=gView.t1-gView.t0;
+  const span=Math.min(Math.max(span0/f,20),T_MAX-T_MIN);
+  const tc=gView.t0+span0*fx,k=span/span0;
+  let t0=tc-(tc-gView.t0)*k,t1=t0+span;
+  if(t0<T_MIN){t0=T_MIN;t1=t0+span}
+  if(t1>T_MAX){t1=T_MAX;t0=t1-span}
+  gView={t0,t1};
+  renderGantt();
+}
+
+function panG(dy){
+  const span=gView.t1-gView.t0;
+  const t0=Math.min(Math.max(gView.t0+dy,T_MIN),T_MAX-span);
+  gView={t0,t1:t0+span};
+  renderGantt();
+}
+
+gToggle.addEventListener('click',()=>{toggleGantt();poke();});
+$('#gClose').addEventListener('click',()=>toggleGantt(false));
+$('#gZoomIn').addEventListener('click',()=>zoomG(.5,1.35));
+$('#gZoomOut').addEventListener('click',()=>zoomG(.5,1/1.35));
+$('#gReset').addEventListener('click',()=>{gView={t0:T_MIN,t1:T_MAX};renderGantt();});
+
+ganttEl.addEventListener('wheel',e=>{
+  e.preventDefault();
+  e.stopPropagation();
+  const r=gCanvas.getBoundingClientRect();
+  const fx=Math.min(Math.max((e.clientX-r.left)/r.width,0),1);
+  if(e.ctrlKey||e.metaKey)zoomG(fx,e.deltaY>0?1/1.3:1.3);
+  else panG((e.deltaY+e.deltaX)*(gView.t1-gView.t0)/r.width);
+},{passive:false});
+
+gCanvas.addEventListener('pointerdown',e=>{
+  gDrag={x:e.clientX,t0:gView.t0,span:gView.t1-gView.t0,w:gCanvas.clientWidth};
+  gMoved=0;
+  gTip.style.display='none';
+  gCanvas.setPointerCapture(e.pointerId);
+});
+gCanvas.addEventListener('pointermove',e=>{
+  if(!gDrag)return;
+  const dx=e.clientX-gDrag.x;
+  gMoved+=Math.abs(dx);
+  panG(-dx/gDrag.w*gDrag.span);
+});
+['pointerup','pointercancel'].forEach(ev=>gCanvas.addEventListener(ev,()=>gDrag=null));
+
+gCanvas.addEventListener('mousemove',e=>{
+  if(gDrag)return;
+  const b=e.target.closest('.g-bar');
+  if(!b){gTip.style.display='none';return}
+  const d=ENTRIES[+b.dataset.i];
+  const dur=(d.now?NOW:d.e)-d.s;
+  gTip.innerHTML='<b>'+d.n+'</b><span class="y">'+(d.ap?'约':'')+fmtYear(d.s)+' — '
+    +(d.now?'今':(d.ap?'约':'')+fmtYear(d.e))+' · '+dur+'年</span><p>'+d.tip+'</p>';
+  const mr=gMain.getBoundingClientRect();
+  let tx=e.clientX-mr.left+14,ty=e.clientY-mr.top+14;
+  if(tx>mr.width-200)tx-=224;
+  gTip.style.left=tx+'px';
+  gTip.style.top=Math.max(4,ty-24)+'px';
+  gTip.style.display='block';
+});
+gCanvas.addEventListener('mouseleave',()=>gTip.style.display='none');
+
+gCanvas.addEventListener('click',e=>{
+  if(gMoved>6)return;
+  const b=e.target.closest('.g-bar');
+  if(!b)return;
+  const d=ENTRIES[+b.dataset.i];
+  const inSpan=NODES.map((n,j)=>({j,dd:Math.abs(n.y-(d.s+d.e)/2)}))
+    .filter(o=>NODES[o.j].y>=d.s&&NODES[o.j].y<=d.e);
+  let pick;
+  if(inSpan.length){
+    inSpan.sort((a,b2)=>a.dd-b2.dd);
+    pick=inSpan[0].j;
+  }else{
+    let bi=-1;
+    NODES.forEach((n,j)=>{if(n.y<d.s)bi=j});
+    const ai=NODES.findIndex(n=>n.y>d.e);
+    const db=bi>=0?d.s-NODES[bi].y:Infinity;
+    const da=ai>=0?NODES[ai].y-d.e:Infinity;
+    pick=(da<=250&&da<db)?ai:(bi>=0?bi:Math.max(ai,0));
+  }
+  goToAnchor(pick+1);
+  poke();
+});
+
+gCanvas.addEventListener('dblclick',e=>{
+  if(gMoved>6)return;
+  const b=e.target.closest('.g-bar');
+  if(!b)return;
+  const d=ENTRIES[+b.dataset.i];
+  const pad=(d.e-d.s)*0.35+25;
+  let t0=Math.max(T_MIN,d.s-pad),t1=Math.min(T_MAX,d.e+pad);
+  if(t1-t0<20)t1=t0+20;
+  gView={t0,t1};
+  renderGantt();
+});
 
 buildNodes();
 measure();
+packLanes();
+renderGantt();
 requestAnimationFrame(frame);
 </script>
 </body>
