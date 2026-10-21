@@ -17,6 +17,8 @@
   --ink-3:#8a7f68;
   --cinnabar:#a63b28;
   --edge:52px;
+  --axisY:56%;
+  --laneH:22px;
   --font-brush:'Ma Shan Zheng','Kaiti SC','STKaiti','KaiTi',serif;
   --font-kai:'Kaiti SC','STKaiti','KaiTi','Noto Serif SC',serif;
   --font-song:'Noto Serif SC','Songti SC','STSong','SimSun',serif;
@@ -242,7 +244,7 @@ body{
 }
 
 .hint{
-  position:fixed;bottom:68px;left:50%;transform:translateX(-50%);
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
   z-index:45;pointer-events:none;
   padding:8px 20px;border-radius:999px;
   background:rgba(43,38,32,.06);border:1px solid rgba(43,38,32,.16);
@@ -257,103 +259,87 @@ body{
   background-image:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
 }
 
-#ganttToggle{
-  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:44;
-  display:flex;align-items:center;gap:8px;height:34px;padding:0 18px;border-radius:999px;
-  border:1px solid rgba(96,76,44,.35);background:rgba(251,246,232,.92);
-  color:#3a342b;font-family:var(--font-kai);font-size:13.5px;letter-spacing:3px;cursor:pointer;
-  box-shadow:0 4px 14px -6px rgba(30,20,8,.35);
-  transition:opacity .3s,transform .2s;
+#laneWrap{
+  position:absolute;left:0;right:0;bottom:0;z-index:1;
+  height:calc(var(--laneH) * 10 + 34px);
+  background:linear-gradient(180deg, rgba(243,234,212,.4), rgba(238,227,199,.85) 22%, rgba(233,221,190,.95));
+  border-top:1px solid rgba(96,76,44,.28);
+  box-shadow:0 -8px 22px -14px rgba(30,20,8,.28);
 }
-#ganttToggle:hover{transform:translateX(-50%) translateY(-1px)}
-body.gantt-open #ganttToggle{opacity:0;pointer-events:none}
-
-#gantt{
-  position:fixed;left:44px;right:44px;bottom:0;height:min(52vh,540px);z-index:46;
-  background:linear-gradient(180deg,#f6efdc,#efe5cb);
-  border:1px solid rgba(96,76,44,.3);border-bottom:none;border-radius:10px 10px 0 0;
-  box-shadow:0 -12px 40px -12px rgba(30,20,8,.35);
-  transform:translateY(105%);visibility:hidden;
-  transition:transform .55s cubic-bezier(.22,.9,.26,1),visibility 0s .55s;
+.lane-axis{position:relative;height:28px}
+.lane-tick{
+  position:absolute;top:6px;transform:translateX(-50%);
+  font-size:10.5px;color:var(--ink-3);font-family:var(--font-song);
+  white-space:nowrap;letter-spacing:1px;
 }
-#gantt.open{transform:translateY(0);visibility:visible;transition:transform .55s cubic-bezier(.22,.9,.26,1),visibility 0s 0s}
-.g-head{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid rgba(96,76,44,.2)}
-.g-title{font-family:var(--font-kai);font-size:14.5px;letter-spacing:3px;color:#3a342b;margin-right:auto}
-.g-btn{
-  height:26px;padding:0 12px;font-size:12px;letter-spacing:1px;color:var(--ink-2);
-  background:rgba(255,253,246,.6);border:1px solid rgba(96,76,44,.3);border-radius:6px;
-  cursor:pointer;font-family:var(--font-song);
+.lane-note{
+  position:absolute;left:26px;top:7px;
+  font-size:11px;color:var(--ink-3);letter-spacing:2px;font-family:var(--font-song);
 }
-.g-btn:hover{background:rgba(43,38,32,.08)}
-.g-body{position:absolute;top:44px;left:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden}
-.g-body::-webkit-scrollbar{width:8px}
-.g-body::-webkit-scrollbar-thumb{background:rgba(90,81,66,.3);border-radius:4px}
-.g-main{position:relative;min-height:100%}
-.g-lbl{
-  position:absolute;top:50%;transform:translateY(-50%);
-  font-size:11.5px;color:var(--ink-2);font-family:var(--font-kai);
-  letter-spacing:1px;white-space:nowrap;pointer-events:none;
-}
-.g-axis{height:30px;position:sticky;top:0;z-index:2;background:#f3ecd9}
-.g-tick{
-  position:absolute;top:7px;transform:translateX(-50%);
-  font-size:10.5px;color:var(--ink-3);font-family:var(--font-song);white-space:nowrap;
-}
-.g-canvas{position:relative}
-.g-row{position:absolute;left:0;right:0;height:26px}
-.g-row:hover{background:rgba(43,38,32,.045)}
-.g-grid{position:absolute;top:0;bottom:0;width:1px;background:rgba(43,38,32,.08)}
-.g-bar{
-  position:absolute;top:4px;height:18px;border-radius:3px;border:1px solid;opacity:.88;
+.lane-canvas{position:relative}
+.lane-row{position:absolute;left:0;right:0;height:var(--laneH)}
+.lane-row:hover{background:rgba(43,38,32,.045)}
+.lane-grid{position:absolute;top:-28px;bottom:0;width:1px;background:rgba(43,38,32,.09)}
+.lane-bar{
+  position:absolute;top:3px;height:calc(var(--laneH) - 7px);
+  border-radius:3px;border:1px solid;opacity:.88;
   cursor:pointer;transition:opacity .2s,box-shadow .2s;
 }
-.g-bar:hover{opacity:1}
-.g-bar.on{opacity:1;box-shadow:0 0 0 2px rgba(166,59,40,.3);border-color:#a63b28}
-.g-bar span{
+.lane-bar:hover{opacity:1}
+.lane-bar.on{opacity:1;box-shadow:0 0 0 2px rgba(166,59,40,.3);border-color:#a63b28}
+.lane-bar span{
   position:absolute;left:6px;top:50%;transform:translateY(-50%);
   color:#f6efdd;font-size:11px;letter-spacing:1px;white-space:nowrap;
   font-family:var(--font-song);pointer-events:none;
 }
-.g-play{
-  position:absolute;top:30px;bottom:0;width:2px;background:var(--cinnabar);z-index:4;
-  box-shadow:0 0 6px rgba(166,59,40,.45);transition:left .35s ease;pointer-events:none;
+.lane-lbl{
+  position:absolute;top:50%;transform:translateY(-50%);
+  font-size:11.5px;color:var(--ink-2);font-family:var(--font-kai);
+  letter-spacing:1px;white-space:nowrap;pointer-events:none;
 }
-.g-play i{
-  position:absolute;top:-26px;left:50%;transform:translateX(-50%);
-  background:var(--cinnabar);color:#f8f1de;font-style:normal;
-  font-size:10.5px;letter-spacing:1px;padding:2px 8px;border-radius:3px;white-space:nowrap;
-  max-width:34vw;overflow:hidden;text-overflow:ellipsis;
+#laneGuide{
+  position:absolute;top:0;bottom:0;width:0;display:none;z-index:4;pointer-events:none;
+  border-left:2px dashed rgba(166,59,40,.5);
 }
-.g-tip{
-  position:absolute;z-index:6;pointer-events:none;display:none;
+#laneGuide::after{
+  content:'';position:absolute;top:-2px;left:-4px;
+  width:6px;height:6px;transform:rotate(45deg);background:var(--cinnabar);
+}
+#laneTip{
+  position:absolute;z-index:7;pointer-events:none;display:none;
   background:#fbf6e8;border:1px solid rgba(96,76,44,.35);border-radius:4px;
   box-shadow:0 8px 20px -8px rgba(43,38,32,.4);
   padding:8px 12px;min-width:170px;max-width:260px;
 }
-.g-tip b{font-family:var(--font-kai);font-size:13.5px;font-weight:600;display:block;margin-bottom:2px}
-.g-tip .y{font-size:11px;color:var(--ink-2);display:block;margin-bottom:3px;letter-spacing:.5px}
-.g-tip p{font-size:11px;color:var(--ink-2);line-height:1.65;margin:0}
+#laneTip b{font-family:var(--font-kai);font-size:13.5px;font-weight:600;display:block;margin-bottom:2px}
+#laneTip .y{font-size:11px;color:var(--ink-2);display:block;margin-bottom:3px;letter-spacing:.5px}
+#laneTip p{font-size:11px;color:var(--ink-2);line-height:1.65;margin:0}
 
-body.gantt-open #viewport{--axisY:32%}
-body.gantt-open .node .connector{height:40px}
-body.gantt-open .card{width:264px;padding:12px 15px 11px}
-body.gantt-open .chip{margin-bottom:5px;font-size:10px;letter-spacing:2px}
-body.gantt-open .year{font-size:25px}
-body.gantt-open .year em{font-size:15px}
-body.gantt-open .title{font-size:17px;margin:1px 0 5px}
-body.gantt-open .desc{font-size:12px;line-height:1.7}
-body.gantt-open .up .card{bottom:calc(100% - var(--axisY) + 52px)}
-body.gantt-open .down .card{top:auto;bottom:calc(100% - var(--axisY) + 52px)}
-body.gantt-open .down .connector{top:auto;bottom:calc(100% - var(--axisY))}
+@media (max-height:1060px){
+  :root{--axisY:44%}
+  .node .connector{height:40px}
+  .card{width:264px;padding:12px 15px 11px}
+  .chip{margin-bottom:5px;font-size:10px;letter-spacing:2px}
+  .year{font-size:25px}
+  .year em{font-size:15px}
+  .title{font-size:17px;margin:1px 0 5px}
+  .desc{font-size:12px;line-height:1.7}
+  .up .card{bottom:calc(100% - var(--axisY) + 52px)}
+  .down .card{top:calc(var(--axisY) + 52px)}
+}
+@media (max-height:780px){
+  :root{--laneH:18px;--axisY:40%}
+}
 
-@media (max-height:660px){
-  .card{width:262px;padding:13px 16px 12px}
-  .year{font-size:27px}
-  .title{font-size:18px}
-  .desc{font-size:12.5px;line-height:1.75}
-  .node{width:280px;margin-right:130px}
-  .up .card{bottom:calc(100% - var(--axisY,50%) + 50px)}
-  .down .card{top:calc(var(--axisY,50%) + 50px)}
+@media (max-height:680px){
+  :root{--axisY:36%}
+  .card{width:240px;padding:10px 13px 9px}
+  .year{font-size:22px}
+  .title{font-size:15px}
+  .desc{font-size:11.5px;line-height:1.6}
+  .node{width:240px;margin-right:104px}
+  .up .card{bottom:calc(100% - var(--axisY,56%) + 46px)}
+  .down .card{top:calc(var(--axisY,56%) + 46px)}
 }
 @media (max-width:760px){
   :root{--edge:20px}
@@ -362,8 +348,7 @@ body.gantt-open .down .connector{top:auto;bottom:calc(100% - var(--axisY))}
   .brand span:last-child{display:none}
   .era{font-size:13px;letter-spacing:2px}
   .hint{font-size:11px;letter-spacing:2px}
-  #gantt{left:6px;right:6px;height:60vh}
-  .g-play i{max-width:30vw}
+  #laneTip{max-width:200px}
 }
 </style>
 </head>
@@ -397,6 +382,12 @@ body.gantt-open .down .connector{top:auto;bottom:calc(100% - var(--axisY))}
           <h2 class="vtitle">卷终</h2>
         </div>
       </section>
+      <div id="laneWrap">
+        <div class="lane-axis" id="laneAxis"><span class="lane-note">历代政权泳道 · 悬停查看 · 点击跳转对应节点</span></div>
+        <div class="lane-canvas" id="laneCanvas"></div>
+        <div id="laneGuide"></div>
+        <div id="laneTip"></div>
+      </div>
     </div>
     <div class="edge edge-l"></div>
     <div class="edge edge-r"></div>
@@ -413,28 +404,7 @@ body.gantt-open .down .connector{top:auto;bottom:calc(100% - var(--axisY))}
   </div>
 </header>
 
-<div class="hint" id="hint">滚轮 · 拖拽 · ← → 浏览长卷 · G 或下方按钮展开泳道时间线</div>
-<button id="ganttToggle" aria-label="展开泳道时间线">
-  <svg viewBox="0 0 16 16" width="16" height="16" fill="#a63b28" aria-hidden="true"><rect x="1" y="2.2" width="8.5" height="2.6" rx="1"/><rect x="5" y="6.7" width="10" height="2.6" rx="1"/><rect x="2.5" y="11.2" width="7" height="2.6" rx="1"/></svg>
-  泳道时间线
-</button>
-<section id="gantt" aria-hidden="true">
-  <div class="g-head">
-    <span class="g-title">历代政权 · 泳道时间线</span>
-    <button class="g-btn" id="gZoomIn">放大</button>
-    <button class="g-btn" id="gZoomOut">缩小</button>
-    <button class="g-btn" id="gReset">重置</button>
-    <button class="g-btn" id="gClose">收起</button>
-  </div>
-  <div class="g-body">
-    <div class="g-main" id="gMain">
-      <div class="g-axis" id="gAxis"></div>
-      <div class="g-canvas" id="gCanvas"></div>
-      <div class="g-play" id="gPlay"><i></i></div>
-      <div class="g-tip" id="gTip"></div>
-    </div>
-  </div>
-</section>
+<div class="hint" id="hint">滚轮 · 拖拽 · ← → 浏览长卷 · 下方泳道:悬停看政权,点击跳节点</div>
 <div class="grain"></div>
 
 <script>
@@ -629,17 +599,12 @@ addEventListener('keydown',e=>{
   else if(k==='ArrowLeft'||k==='PageUp'){nav(-1);e.preventDefault();}
   else if(k==='Home'){goToAnchor(0);e.preventDefault();}
   else if(k==='End'){goToAnchor(anchors.length-1);e.preventDefault();}
-  else if(k==='g'||k==='G'){toggleGantt();e.preventDefault();}
-  else if(k==='Escape'){toggleGantt(false);}
-  else if(k==='+'||k==='='){if(ganttEl.classList.contains('open'))zoomG(.5,1.35);}
-  else if(k==='-'){if(ganttEl.classList.contains('open'))zoomG(.5,1/1.35);}
 });
 
 let rz=null;
-addEventListener('resize',()=>{cancelAnimationFrame(rz);rz=requestAnimationFrame(()=>{measure();renderGantt();})});
+addEventListener('resize',()=>{cancelAnimationFrame(rAF);rz=requestAnimationFrame(measure)});
 
 const NOW=new Date().getFullYear();
-const T_MIN=-2150,T_MAX=NOW+40;
 const ENTRIES=[
   {n:'夏',g:'先秦',s:-2070,e:-1600,ap:1,m:1,tip:'禹启家天下,史载第一个世袭制王朝。'},
   {n:'商',g:'先秦',s:-1600,e:-1046,ap:1,m:1,tip:'甲骨文与青铜的王朝,殷墟见证鼎盛。'},
@@ -699,11 +664,9 @@ const PALETTE={
   '明清':{f:'#3f4a6b',b:'#2a3247'},
   '近现代':{f:'#a63b28',b:'#7c2a1c'}
 };
-const ganttEl=$('#gantt'),gCanvas=$('#gCanvas'),gAxis=$('#gAxis'),
-      gTip=$('#gTip'),gPlay=$('#gPlay'),gMain=$('#gMain'),gToggle=$('#ganttToggle');
-const LANE_H=26;
-let gView={t0:T_MIN,t1:T_MAX},gDrag=null,gMoved=0,gActiveYear=null,gFlag='',
-    gLanes=[],gLaneOf=[];
+const laneWrap=$('#laneWrap'),laneCanvas=$('#laneCanvas'),laneAxis=$('#laneAxis'),
+      laneGuide=$('#laneGuide'),laneTip=$('#laneTip');
+let gLanes=[],gLaneOf=[],ctrl=[];
 
 function fmtYear(y){return y<0?'前'+(-y):(y===0?'元年':''+y)}
 
@@ -727,168 +690,118 @@ function packLanes(){
   });
 }
 
-function renderGantt(){
-  const W=gCanvas.clientWidth;
-  if(!W)return;
-  gCanvas.innerHTML='';
-  gAxis.innerHTML='';
-  const span=gView.t1-gView.t0;
-  const x=t=>(t-gView.t0)/span*W;
-  const step=[2000,1000,500,200,100,50,20,10,5,2,1].find(s=>span/s<=12)||1;
-  for(let t=Math.ceil(gView.t0/step)*step;t<=gView.t1;t+=step){
-    const tk=document.createElement('div');
-    tk.className='g-tick';
-    tk.style.left=(x(t)/W*100)+'%';
-    tk.textContent=fmtYear(t);
-    gAxis.appendChild(tk);
-    const g=document.createElement('div');
-    g.className='g-grid';
-    g.style.left=(x(t)/W*100)+'%';
-    gCanvas.appendChild(g);
+function buildTimeMap(){
+  ctrl=NODES.map((n,i)=>{
+    const el=track.querySelector('.node[data-idx="'+i+'"]');
+    return {x:el.offsetLeft+el.offsetWidth/2,y:n.y};
+  });
+}
+
+function yearToX(y){
+  const c0=ctrl[0],cN=ctrl[ctrl.length-1];
+  if(y<=c0.y){
+    const k=(ctrl[1].x-c0.x)/(ctrl[1].y-c0.y);
+    return c0.x+(y-c0.y)*k;
   }
+  for(let i=1;i<ctrl.length;i++){
+    if(y<=ctrl[i].y){
+      const a=ctrl[i-1],b=ctrl[i];
+      return a.x+(y-a.y)/(b.y-a.y)*(b.x-a.x);
+    }
+  }
+  const k=(cN.x-ctrl[ctrl.length-2].x)/(cN.y-ctrl[ctrl.length-2].y);
+  return cN.x+(y-cN.y)*k;
+}
+
+function renderLanes(){
+  const TW=track.scrollWidth;
+  laneAxis.innerHTML='<span class="lane-note">历代政权泳道 · 悬停查看 · 点击跳转对应节点</span>';
+  laneCanvas.innerHTML='';
+  ctrl.forEach(c=>{
+    const tk=document.createElement('div');
+    tk.className='lane-tick';
+    tk.style.left=c.x+'px';
+    tk.textContent=fmtYear(c.y);
+    laneAxis.appendChild(tk);
+    const g=document.createElement('div');
+    g.className='lane-grid';
+    g.style.left=c.x+'px';
+    laneCanvas.appendChild(g);
+  });
   gLanes.forEach((lane,li)=>{
     const row=document.createElement('div');
-    row.className='g-row';
-    row.style.top=li*LANE_H+'px';
-    gCanvas.appendChild(row);
+    row.className='lane-row';
+    row.style.top='calc(var(--laneH) * '+li+')';
+    laneCanvas.appendChild(row);
     lane.items.forEach((idx,k)=>{
       const d=ENTRIES[idx];
-      const l=x(d.s),r=x(d.e);
-      if(r<=0||l>=W)return;
-      const cl=Math.max(l,0),cr=Math.min(r,W);
+      const l=Math.max(0,yearToX(d.s)),r=Math.min(yearToX(d.e),TW-24);
+      if(r<=l)return;
       const bar=document.createElement('div');
-      bar.className='g-bar';
+      bar.className='lane-bar';
       bar.dataset.i=idx;
-      bar.style.left=cl+'px';
-      bar.style.width=Math.max(2,cr-cl)+'px';
+      bar.style.left=l+'px';
+      bar.style.width=Math.max(2,r-l)+'px';
       const p=PALETTE[d.g];
       bar.style.background=p.f;
       bar.style.borderColor=p.b;
       const lblW=d.n.length*13+12;
-      if(cr-cl>lblW+8){
+      if(r-l>lblW+8){
         bar.innerHTML='<span>'+d.n+'</span>';
       }else{
-        const lim=k+1<lane.items.length?x(ENTRIES[lane.items[k+1]].s):W;
-        if(lim-cr>lblW+8&&cr+6+lblW<=W){
+        const lim=k+1<lane.items.length?yearToX(ENTRIES[lane.items[k+1]].s):TW;
+        if(lim-r>lblW+8&&r+6+lblW<=TW){
           const lb=document.createElement('span');
-          lb.className='g-lbl';
+          lb.className='lane-lbl';
           lb.textContent=d.n;
-          lb.style.left=(cr+6)+'px';
+          lb.style.left=(r+6)+'px';
           row.appendChild(lb);
         }
       }
       row.appendChild(bar);
     });
   });
-  gCanvas.style.height=gLanes.length*LANE_H+'px';
-  if(gActiveYear!=null)syncBars(gActiveYear);
-  positionPlayhead();
+  laneCanvas.style.height='calc(var(--laneH) * '+gLanes.length+')';
+  laneWrap.style.height='calc(var(--laneH) * '+gLanes.length+' + 34px)';
 }
 
 function syncBars(y){
-  gCanvas.querySelectorAll('.g-bar.on').forEach(e=>e.classList.remove('on'));
+  laneCanvas.querySelectorAll('.lane-bar.on').forEach(e=>e.classList.remove('on'));
   ENTRIES.forEach((d,i)=>{
     if(y>=d.s&&y<=d.e){
-      const b=gCanvas.querySelector('.g-bar[data-i="'+i+'"]');
+      const b=laneCanvas.querySelector('.lane-bar[data-i="'+i+'"]');
       if(b)b.classList.add('on');
     }
   });
 }
 
-function positionPlayhead(){
-  if(gActiveYear==null){gPlay.style.display='none';return}
-  const W=gCanvas.clientWidth;
-  if(!W)return;
-  const x=(gActiveYear-gView.t0)/(gView.t1-gView.t0)*W;
-  gPlay.style.display=(x<-4||x>W+4)?'none':'block';
-  gPlay.style.left=x+'px';
-  gPlay.querySelector('i').textContent=gFlag;
-}
-
 function syncGanttHighlight(idx){
   if(idx==null||idx<0)return;
-  const n=NODES[idx];
-  gActiveYear=n.y;
-  gFlag=n.title+' · '+fmtYear(n.y);
-  syncBars(n.y);
-  positionPlayhead();
+  syncBars(NODES[idx].y);
+  laneGuide.style.display='block';
+  laneGuide.style.left=ctrl[idx].x+'px';
 }
 
-function toggleGantt(force){
-  const open=force!==undefined?force:!ganttEl.classList.contains('open');
-  ganttEl.classList.toggle('open',open);
-  ganttEl.setAttribute('aria-hidden',String(!open));
-  document.body.classList.toggle('gantt-open',open);
-  if(open)renderGantt();
-}
-
-function zoomG(fx,f){
-  const span0=gView.t1-gView.t0;
-  const span=Math.min(Math.max(span0/f,20),T_MAX-T_MIN);
-  const tc=gView.t0+span0*fx,k=span/span0;
-  let t0=tc-(tc-gView.t0)*k,t1=t0+span;
-  if(t0<T_MIN){t0=T_MIN;t1=t0+span}
-  if(t1>T_MAX){t1=T_MAX;t0=t1-span}
-  gView={t0,t1};
-  renderGantt();
-}
-
-function panG(dy){
-  const span=gView.t1-gView.t0;
-  const t0=Math.min(Math.max(gView.t0+dy,T_MIN),T_MAX-span);
-  gView={t0,t1:t0+span};
-  renderGantt();
-}
-
-gToggle.addEventListener('click',()=>{toggleGantt();poke();});
-$('#gClose').addEventListener('click',()=>toggleGantt(false));
-$('#gZoomIn').addEventListener('click',()=>zoomG(.5,1.35));
-$('#gZoomOut').addEventListener('click',()=>zoomG(.5,1/1.35));
-$('#gReset').addEventListener('click',()=>{gView={t0:T_MIN,t1:T_MAX};renderGantt();});
-
-ganttEl.addEventListener('wheel',e=>{
-  e.preventDefault();
-  e.stopPropagation();
-  const r=gCanvas.getBoundingClientRect();
-  const fx=Math.min(Math.max((e.clientX-r.left)/r.width,0),1);
-  if(e.ctrlKey||e.metaKey)zoomG(fx,e.deltaY>0?1/1.3:1.3);
-  else panG((e.deltaY+e.deltaX)*(gView.t1-gView.t0)/r.width);
-},{passive:false});
-
-gCanvas.addEventListener('pointerdown',e=>{
-  gDrag={x:e.clientX,t0:gView.t0,span:gView.t1-gView.t0,w:gCanvas.clientWidth};
-  gMoved=0;
-  gTip.style.display='none';
-  gCanvas.setPointerCapture(e.pointerId);
-});
-gCanvas.addEventListener('pointermove',e=>{
-  if(!gDrag)return;
-  const dx=e.clientX-gDrag.x;
-  gMoved+=Math.abs(dx);
-  panG(-dx/gDrag.w*gDrag.span);
-});
-['pointerup','pointercancel'].forEach(ev=>gCanvas.addEventListener(ev,()=>gDrag=null));
-
-gCanvas.addEventListener('mousemove',e=>{
-  if(gDrag)return;
-  const b=e.target.closest('.g-bar');
-  if(!b){gTip.style.display='none';return}
+laneCanvas.addEventListener('mousemove',e=>{
+  const b=e.target.closest('.lane-bar');
+  if(!b){laneTip.style.display='none';return}
   const d=ENTRIES[+b.dataset.i];
   const dur=(d.now?NOW:d.e)-d.s;
-  gTip.innerHTML='<b>'+d.n+'</b><span class="y">'+(d.ap?'约':'')+fmtYear(d.s)+' — '
+  laneTip.innerHTML='<b>'+d.n+'</b><span class="y">'+(d.ap?'约':'')+fmtYear(d.s)+' — '
     +(d.now?'今':(d.ap?'约':'')+fmtYear(d.e))+' · '+dur+'年</span><p>'+d.tip+'</p>';
-  const mr=gMain.getBoundingClientRect();
-  let tx=e.clientX-mr.left+14,ty=e.clientY-mr.top+14;
-  if(tx>mr.width-200)tx-=224;
-  gTip.style.left=tx+'px';
-  gTip.style.top=Math.max(4,ty-24)+'px';
-  gTip.style.display='block';
+  const vr=viewport.getBoundingClientRect();
+  let tx=e.clientX-vr.left+current+14;
+  const ty=e.clientY-vr.top-laneWrap.offsetTop;
+  if(tx>track.scrollWidth-210)tx-=224;
+  laneTip.style.left=Math.max(4,tx)+'px';
+  laneTip.style.top=Math.max(4,ty-96)+'px';
+  laneTip.style.display='block';
 });
-gCanvas.addEventListener('mouseleave',()=>gTip.style.display='none');
+laneCanvas.addEventListener('mouseleave',()=>laneTip.style.display='none');
 
-gCanvas.addEventListener('click',e=>{
-  if(gMoved>6)return;
-  const b=e.target.closest('.g-bar');
+laneCanvas.addEventListener('click',e=>{
+  if(moved>6)return;
+  const b=e.target.closest('.lane-bar');
   if(!b)return;
   const d=ENTRIES[+b.dataset.i];
   const inSpan=NODES.map((n,j)=>({j,dd:Math.abs(n.y-(d.s+d.e)/2)}))
@@ -909,22 +822,11 @@ gCanvas.addEventListener('click',e=>{
   poke();
 });
 
-gCanvas.addEventListener('dblclick',e=>{
-  if(gMoved>6)return;
-  const b=e.target.closest('.g-bar');
-  if(!b)return;
-  const d=ENTRIES[+b.dataset.i];
-  const pad=(d.e-d.s)*0.35+25;
-  let t0=Math.max(T_MIN,d.s-pad),t1=Math.min(T_MAX,d.e+pad);
-  if(t1-t0<20)t1=t0+20;
-  gView={t0,t1};
-  renderGantt();
-});
-
 buildNodes();
-measure();
+buildTimeMap();
 packLanes();
-renderGantt();
+renderLanes();
+measure();
 requestAnimationFrame(frame);
 </script>
 </body>
