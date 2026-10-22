@@ -22,17 +22,18 @@ function insertDetailNodes(regime,evts){
   const made=[];
   evts.slice().sort((a,b)=>a.y-b.y).forEach(ev=>{
     const era=eras.find(er=>ev.y>=er.s&&ev.y<=er.e);
+    const yp=ev.p||(ev.y<0?'前':'');
     const el=document.createElement('article');
     el.className='node detail';
     el.dataset.y=ev.y;
     el.dataset.era=regime;
     el.dataset.title=ev.t;
     el.dataset.regime=regime;
-    el.dataset.ytxt=(ev.p?ev.p+' ':'')+Math.abs(ev.y);
+    el.dataset.ytxt=(yp?yp+' ':'')+Math.abs(ev.y);
     el.innerHTML=
       '<div class="card" style="border-left-color:'+pc.f+'">'+
       '<span class="chip" style="background:'+pc.f+';border-color:'+pc.b+';color:#f6efdd">'+regime+(era?' · '+era.n:'')+'</span>'+
-      '<h3 class="year"><em>'+(ev.p||'')+'</em>'+Math.abs(ev.y)+'</h3>'+
+      '<h3 class="year"><em>'+yp+'</em>'+Math.abs(ev.y)+'</h3>'+
       '<h4 class="title">'+ev.t+'</h4>'+
       '<p class="desc">'+ev.d+'</p></div>'+
       '<span class="connector"></span><span class="dot" style="border-color:'+pc.f+'"></span>';
@@ -57,6 +58,7 @@ function rebuildAfterChange(){
   measure();
   updateBands();
   renderRulerStrips();
+  renderMinorPoints();
 }
 
 function updateBands(){
@@ -169,10 +171,47 @@ function renderRulerStrips(){
       if(tx>TW-210)tx-=224;
       laneTip.style.left=Math.max(4,tx)+'px';
       laneTip.style.top=Math.max(4,ty-96)+'px';
+      laneTip.style.transform='';
       laneTip.style.display='block';
     });
     strip.addEventListener('mouseleave',()=>laneTip.style.display='none');
     track.appendChild(strip);
+  });
+}
+
+function renderMinorPoints(){
+  track.querySelectorAll('.mini-node').forEach(m=>m.remove());
+  const TW=track.scrollWidth;
+  S.regimePoints.forEach((pts,name)=>{
+    const d=ENTRIES.find(x=>x.n===name);
+    if(!d||!pts||!pts.length)return;
+    const pc=PALETTE[d.g];
+    pts.forEach((p,i)=>{
+      const x=yearToX(p.y);
+      if(x<0||x>TW)return;
+      const yp=p.p||(p.y<0?'前':'');
+      const el=document.createElement('div');
+      el.className='mini-node'+(i%2?' up':'');
+      el.dataset.regime=name;
+      el.style.left=x+'px';
+      el.title='';
+      el.innerHTML='<span class="mini-yr">'+(yp?yp+' ':'')+Math.abs(p.y)+'</span>'
+        +'<span class="mini-dot" style="background:'+pc.f+';border-color:'+pc.b+'"></span>';
+      el.addEventListener('mousemove',e2=>{
+        laneTip.innerHTML='<b>'+p.t+'</b><span class="y">'+name+' · '
+          +(yp?yp+' ':'')+Math.abs(p.y)+' 年</span><p>'+p.d+'</p>';
+        const vr2=viewport.getBoundingClientRect();
+        let tx=e2.clientX-vr2.left+S.current+14;
+        const ty=e2.clientY-laneWrap.getBoundingClientRect().top-8;
+        if(tx>TW-210)tx-=224;
+        laneTip.style.left=Math.max(4,tx)+'px';
+        laneTip.style.top=ty+'px';
+        laneTip.style.transform='translateY(-100%)';
+        laneTip.style.display='block';
+      });
+      el.addEventListener('mouseleave',()=>laneTip.style.display='none');
+      track.appendChild(el);
+    });
   });
 }
 
@@ -183,6 +222,7 @@ export async function toggleRegime(d){
     S.loadedRegimes.delete(name);
     S.regimeEras.delete(name);
     S.regimeRulers.delete(name);
+    S.regimePoints.delete(name);
     rebuildAfterChange();
     toast('已收起 '+name+' 明细');
     return;
@@ -204,6 +244,7 @@ export async function toggleRegime(d){
   }
   if(data.eras&&data.eras.length)S.regimeEras.set(name,data.eras);
   if(data.emperors&&data.emperors.length)S.regimeRulers.set(name,data.emperors);
+  if(data.points&&data.points.length)S.regimePoints.set(name,data.points);
   const made=insertDetailNodes(name,data.events);
   S.loadedRegimes.add(name);
   rebuildAfterChange();

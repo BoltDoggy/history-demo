@@ -192,6 +192,7 @@ laneCanvas.addEventListener('mousemove',e=>{
   if(tx>track.scrollWidth-210)tx-=224;
   laneTip.style.left=Math.max(4,tx)+'px';
   laneTip.style.top=Math.max(4,ty-96)+'px';
+  laneTip.style.transform='';
   laneTip.style.display='block';
 });
 laneCanvas.addEventListener('mouseleave',()=>laneTip.style.display='none');

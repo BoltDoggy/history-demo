@@ -4,7 +4,7 @@ export const S={
   domNodes:[],ctrl:[],gLanes:[],gLaneOf:[],
   gLastY:null,gLastIdx:null,hintGone:false,
   loadedRegimes:new Set(),loadingSet:new Set(),
-  regimeEras:new Map(),regimeRulers:new Map()
+  regimeEras:new Map(),regimeRulers:new Map(),regimePoints:new Map()
 };
 
 export const hooks={onActiveNode:null,onToggleRegime:null};
